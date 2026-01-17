@@ -42,6 +42,7 @@ readonly NC='\033[0m' # No Color (重置)
 readonly MINIMIZE_PACKAGES=(
     "nano"
     "vim-tiny"
+    "vim-common"
     "man-db"
     "manpages"
     "info"
@@ -54,6 +55,10 @@ readonly MINIMIZE_PACKAGES=(
     "usbutils"
     "pciutils"
     "lshw"
+    "less"
+    "eject"
+    "inetutils-telnet"
+    "busybox"
 )
 
 # 要停用的服务列表
@@ -125,7 +130,7 @@ check_root() {
 # 返回: 0 = 是Debian系统, 1 = 非Debian系统
 check_debian() {
     if [[ ! -f /etc/debian_version ]]; then
-        print_error "此脚本仅支持Debian及其衍生版本（如Ubuntu、Linux Mint等）"
+        print_error "此脚本仅支持Debian"
         return 1
     fi
     return 0
