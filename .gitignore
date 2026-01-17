@@ -25,3 +25,4 @@ Thumbs.db
 # 运行时文件
 *.pid
 *.lock
+.kiro/
