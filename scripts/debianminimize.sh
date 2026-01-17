@@ -72,37 +72,15 @@ create_backup() {
 select_fastest_source() {
     log "测试下载源速度..."
     
-    local github_time=999
-    local gitee_time=999
-    
-    # 测试GitHub速度
-    if command -v curl &> /dev/null; then
-        github_time=$(curl -o /dev/null -s -w "%{time_total}" --connect-timeout 5 --max-time 10 "$GITHUB_URL" 2>/dev/null || echo "999")
-    elif command -v wget &> /dev/null; then
-        local start_time=$(date +%s.%N)
-        if wget -q --timeout=10 --tries=1 "$GITHUB_URL" -O /dev/null 2>/dev/null; then
-            local end_time=$(date +%s.%N)
-            github_time=$(awk "BEGIN {print $end_time - $start_time}" 2>/dev/null || echo "999")
-        fi
-    fi
-    
-    # 测试Gitee速度
-    if command -v curl &> /dev/null; then
-        gitee_time=$(curl -o /dev/null -s -w "%{time_total}" --connect-timeout 5 --max-time 10 "$GITEE_URL" 2>/dev/null || echo "999")
-    elif command -v wget &> /dev/null; then
-        local start_time=$(date +%s.%N)
-        if wget -q --timeout=10 --tries=1 "$GITEE_URL" -O /dev/null 2>/dev/null; then
-            local end_time=$(date +%s.%N)
-            gitee_time=$(awk "BEGIN {print $end_time - $start_time}" 2>/dev/null || echo "999")
-        fi
-    fi
-    
-    # 选择最快的源 (使用awk进行浮点数比较)
-    if awk "BEGIN {exit !($github_time < $gitee_time)}" 2>/dev/null; then
-        log "选择GitHub源 (${github_time}s vs ${gitee_time}s)"
+    # 简单测试：先尝试Gitee（国内网络通常更快），如果失败再用GitHub
+    if curl -o /dev/null -s --connect-timeout 3 --max-time 5 "$GITEE_URL" 2>/dev/null; then
+        log "选择Gitee源（国内网络优化）"
+        echo "$GITEE_URL"
+    elif curl -o /dev/null -s --connect-timeout 3 --max-time 5 "$GITHUB_URL" 2>/dev/null; then
+        log "选择GitHub源（Gitee不可达）"
         echo "$GITHUB_URL"
     else
-        log "选择Gitee源 (${gitee_time}s vs ${github_time}s)"
+        warning "两个源都无法访问，默认使用Gitee源"
         echo "$GITEE_URL"
     fi
 }
