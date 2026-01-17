@@ -296,8 +296,18 @@ do_upgrade() {
     local start_time
     start_time=$(date +%s)
     
+    # 步骤0: 修复可能中断的安装
+    print_step "步骤 0/5: 检查并修复中断的安装..."
+    if dpkg --configure -a; then
+        print_success "系统状态正常"
+    else
+        print_warning "修复过程中出现问题，继续执行..."
+    fi
+    
+    echo ""
+    
     # 步骤1: 更新软件源
-    print_step "步骤 1/4: 更新软件源列表..."
+    print_step "步骤 1/5: 更新软件源列表..."
     if apt-get update -y; then
         print_success "软件源已更新"
     else
@@ -307,10 +317,10 @@ do_upgrade() {
     
     echo ""
     
-    # 步骤2: 升级软件包
-    print_step "步骤 2/4: 升级所有软件包..."
-    if DEBIAN_FRONTEND=noninteractive apt-get upgrade -y; then
-        print_success "软件包已升级"
+    # 步骤2: 完整升级软件包（包括held back的包）
+    print_step "步骤 2/5: 完整升级所有软件包..."
+    if DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"; then
+        print_success "软件包已完整升级"
     else
         print_error "升级软件包失败"
         return 1
@@ -319,8 +329,8 @@ do_upgrade() {
     echo ""
     
     # 步骤3: 自动移除不需要的软件包
-    print_step "步骤 3/4: 清理不需要的软件包..."
-    if apt-get autoremove -y; then
+    print_step "步骤 3/5: 清理不需要的软件包..."
+    if DEBIAN_FRONTEND=noninteractive apt-get autoremove -y --purge; then
         print_success "已清理不需要的软件包"
     else
         print_warning "清理失败，但这不影响升级结果"
@@ -329,11 +339,21 @@ do_upgrade() {
     echo ""
     
     # 步骤4: 清理下载缓存
-    print_step "步骤 4/4: 清理下载缓存..."
+    print_step "步骤 4/5: 清理下载缓存..."
     if apt-get autoclean -y; then
         print_success "缓存已清理"
     else
         print_warning "清理缓存失败，但这不影响升级结果"
+    fi
+    
+    echo ""
+    
+    # 步骤5: 彻底清理APT缓存
+    print_step "步骤 5/5: 彻底清理APT缓存..."
+    if apt-get clean; then
+        print_success "APT缓存已彻底清理"
+    else
+        print_warning "清理APT缓存失败，但这不影响升级结果"
     fi
     
     # 计算耗时
