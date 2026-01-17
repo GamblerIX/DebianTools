@@ -74,8 +74,6 @@ select_fastest_source() {
     
     local github_time=999
     local gitee_time=999
-    local test_url_github="${GITHUB_URL%/*}/test"
-    local test_url_gitee="${GITEE_URL%/*}/test"
     
     # 测试GitHub速度
     if command -v curl &> /dev/null; then
@@ -84,7 +82,7 @@ select_fastest_source() {
         local start_time=$(date +%s.%N)
         if wget -q --timeout=10 --tries=1 "$GITHUB_URL" -O /dev/null 2>/dev/null; then
             local end_time=$(date +%s.%N)
-            github_time=$(echo "$end_time - $start_time" | bc 2>/dev/null || echo "999")
+            github_time=$(awk "BEGIN {print $end_time - $start_time}" 2>/dev/null || echo "999")
         fi
     fi
     
@@ -95,12 +93,12 @@ select_fastest_source() {
         local start_time=$(date +%s.%N)
         if wget -q --timeout=10 --tries=1 "$GITEE_URL" -O /dev/null 2>/dev/null; then
             local end_time=$(date +%s.%N)
-            gitee_time=$(echo "$end_time - $start_time" | bc 2>/dev/null || echo "999")
+            gitee_time=$(awk "BEGIN {print $end_time - $start_time}" 2>/dev/null || echo "999")
         fi
     fi
     
-    # 选择最快的源
-    if (( $(echo "$github_time < $gitee_time" | bc -l 2>/dev/null || echo "0") )); then
+    # 选择最快的源 (使用awk进行浮点数比较)
+    if awk "BEGIN {exit !($github_time < $gitee_time)}" 2>/dev/null; then
         log "选择GitHub源 (${github_time}s vs ${gitee_time}s)"
         echo "$GITHUB_URL"
     else
